@@ -1,33 +1,7 @@
-// --- Background Music Autoplay Controller with Visual Diagnostics ---
+// --- Background Music Autoplay Controller ---
 const audio = document.getElementById('bgMusic');
 const soundToggle = document.getElementById('soundToggle');
 let isMusicInitialized = false;
-
-// Create floating diagnostic panel for the user
-const diag = document.createElement('div');
-diag.id = 'audio-diagnostics';
-diag.style.position = 'fixed';
-diag.style.bottom = '15px';
-diag.style.left = '15px';
-diag.style.background = 'rgba(15, 20, 15, 0.9)';
-diag.style.color = '#39ff14';
-diag.style.padding = '12px 16px';
-diag.style.borderRadius = '10px';
-diag.style.fontSize = '12px';
-diag.style.fontFamily = 'monospace';
-diag.style.zIndex = '9999';
-diag.style.border = '1.5px solid rgba(57, 255, 20, 0.4)';
-diag.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
-diag.style.pointerEvents = 'none';
-diag.innerHTML = '⚡ Diagnostics: Ready. Click anywhere on the left page column to test playback.';
-document.body.appendChild(diag);
-
-function logDiag(msg, isError = false) {
-  diag.style.color = isError ? '#ff0050' : '#39ff14';
-  diag.style.borderColor = isError ? 'rgba(255, 0, 80, 0.5)' : 'rgba(57, 255, 20, 0.4)';
-  diag.innerHTML = (isError ? '❌ ' : '⚡ ') + 'Diagnostics: ' + msg;
-  console.log('[Diag] ' + msg);
-}
 
 // Function to safely set playtime to middle
 function setToMiddle() {
@@ -37,81 +11,20 @@ function setToMiddle() {
     } else {
       audio.currentTime = 79; // Safe default middle point for Sunflower
     }
-    logDiag("Position set to middle of track (" + Math.round(audio.currentTime) + "s).");
   } catch (e) {
-    logDiag("Failed seeking. ReadyState: " + audio.readyState + ". Error: " + e.message, true);
+    console.warn("Seeking failed:", e);
   }
 }
 
-// Seek to the middle of the track when metadata loads
+// Seek to the middle when metadata loads
 audio.addEventListener('loadedmetadata', () => {
-  logDiag("Metadata loaded. Track duration: " + Math.round(audio.duration) + "s.");
-  if (isMusicInitialized) {
-    setToMiddle();
-  }
+  setToMiddle();
 });
 
-// Play audio on first user interaction
-function startAutoplay() {
-  if (isMusicInitialized) return;
-  
-  logDiag("Click detected. Invoking audio.play()...");
-  
-  audio.play()
-    .then(() => {
-      isMusicInitialized = true;
-      updateToggleButton(true);
-      
-      // Once playing, safely set the position to the middle
-      if (audio.readyState >= 1) {
-        setToMiddle();
-      } else {
-        logDiag("Playing. Waiting for metadata to seek...");
-        audio.addEventListener('loadedmetadata', setToMiddle, { once: true });
-      }
-      
-      // Clean up event listeners
-      document.removeEventListener('click', startAutoplay);
-      document.removeEventListener('touchstart', startAutoplay);
-    })
-    .catch((err) => {
-      logDiag("Playback blocked or failed. Error name: " + err.name + " - Msg: " + err.message, true);
-    });
-}
-
-// Add listeners for interaction
-document.removeEventListener('click', startAutoplay);
-document.addEventListener('click', startAutoplay);
-document.addEventListener('touchstart', startAutoplay);
-
-// Toggle sound manually
-soundToggle.addEventListener('click', (e) => {
-  e.stopPropagation(); // Avoid triggering startAutoplay again
-  logDiag("Sound toggle FAB clicked.");
-  if (audio.paused) {
-    audio.play()
-      .then(() => {
-        isMusicInitialized = true;
-        updateToggleButton(true);
-        if (audio.readyState >= 1) {
-          setToMiddle();
-        } else {
-          audio.addEventListener('loadedmetadata', setToMiddle, { once: true });
-        }
-      })
-      .catch((err) => {
-        logDiag("Manual play failed: " + err.message, true);
-      });
-  } else {
-    audio.pause();
-    updateToggleButton(false);
-    logDiag("Audio paused manually.");
-  }
-});
-
-function updateToggleButton(isPlaying) {
+// Update the sound FAB UI
+function updateToggleButton(isPlaying, isMuted = false) {
   const icon = soundToggle.querySelector('i');
-  if (isPlaying) {
+  if (isPlaying && !isMuted) {
     soundToggle.classList.add('playing');
     icon.className = 'fa-solid fa-volume-high';
   } else {
@@ -119,3 +32,65 @@ function updateToggleButton(isPlaying) {
     icon.className = 'fa-solid fa-volume-xmark';
   }
 }
+
+// Autoplay attempt when page loads
+function initAutoplay() {
+  setToMiddle();
+  
+  // 1. Try playing with sound
+  audio.play()
+    .then(() => {
+      isMusicInitialized = true;
+      updateToggleButton(true);
+      console.log("Autoplay success: Audio playing with sound.");
+    })
+    .catch((err) => {
+      console.warn("Standard autoplay blocked by browser policy. Attempting muted autoplay...", err);
+      
+      // 2. Fallback: play muted in the background
+      audio.muted = true;
+      audio.play()
+        .then(() => {
+          isMusicInitialized = true;
+          updateToggleButton(true, true); // Visual indicator stays muted
+          console.log("Muted autoplay success. Waiting for user to unmute.");
+        })
+        .catch((e) => {
+          console.error("Muted autoplay also blocked:", e);
+        });
+    });
+}
+
+// Execute autoplay sequence
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAutoplay);
+} else {
+  initAutoplay();
+}
+
+// Handle manual sound toggle interactions
+soundToggle.addEventListener('click', (e) => {
+  e.stopPropagation();
+  
+  if (audio.muted) {
+    // If it was playing muted, unmute it
+    audio.muted = false;
+    audio.play();
+    updateToggleButton(true);
+    console.log("Audio unmuted manually.");
+  } else if (audio.paused) {
+    // If paused, resume playback from middle or current position
+    if (audio.currentTime === 0) {
+      setToMiddle();
+    }
+    audio.muted = false;
+    audio.play();
+    updateToggleButton(true);
+    console.log("Audio playing.");
+  } else {
+    // If playing, pause playback
+    audio.pause();
+    updateToggleButton(false);
+    console.log("Audio paused.");
+  }
+});
