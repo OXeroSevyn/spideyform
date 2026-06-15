@@ -1,6 +1,8 @@
-// --- Background Music Autoplay Controller ---
+// --- Background Music & Splash Entrance Controller ---
 const audio = document.getElementById('bgMusic');
 const soundToggle = document.getElementById('soundToggle');
+const splashOverlay = document.getElementById('splashOverlay');
+const enterBtn = document.getElementById('enterBtn');
 let isMusicInitialized = false;
 
 // Function to safely set playtime to middle
@@ -22,9 +24,9 @@ audio.addEventListener('loadedmetadata', () => {
 });
 
 // Update the sound FAB UI
-function updateToggleButton(isPlaying, isMuted = false) {
+function updateToggleButton(isPlaying) {
   const icon = soundToggle.querySelector('i');
-  if (isPlaying && !isMuted) {
+  if (isPlaying) {
     soundToggle.classList.add('playing');
     icon.className = 'fa-solid fa-volume-high';
   } else {
@@ -33,64 +35,44 @@ function updateToggleButton(isPlaying, isMuted = false) {
   }
 }
 
-// Autoplay attempt when page loads
-function initAutoplay() {
+// Enter Portal Event Handler (Triggering unmuted audio)
+enterBtn.addEventListener('click', () => {
+  // Seek to middle
   setToMiddle();
   
-  // 1. Try playing with sound
+  // Play unmuted audio (guaranteed to succeed since it runs inside a user click handler)
+  audio.muted = false;
   audio.play()
     .then(() => {
       isMusicInitialized = true;
       updateToggleButton(true);
-      console.log("Autoplay success: Audio playing with sound.");
+      console.log("Audio started playing successfully on entrance.");
     })
     .catch((err) => {
-      console.warn("Standard autoplay blocked by browser policy. Attempting muted autoplay...", err);
-      
-      // 2. Fallback: play muted in the background
-      audio.muted = true;
-      audio.play()
-        .then(() => {
-          isMusicInitialized = true;
-          updateToggleButton(true, true); // Visual indicator stays muted
-          console.log("Muted autoplay success. Waiting for user to unmute.");
-        })
-        .catch((e) => {
-          console.error("Muted autoplay also blocked:", e);
-        });
+      console.error("Audio playback failed on entrance:", err);
     });
-}
 
-// Execute autoplay sequence
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initAutoplay);
-} else {
-  initAutoplay();
-}
+  // Fade out and remove splash screen from view
+  splashOverlay.classList.add('hidden');
+});
 
 // Handle manual sound toggle interactions
 soundToggle.addEventListener('click', (e) => {
   e.stopPropagation();
   
   if (audio.muted) {
-    // If it was playing muted, unmute it
     audio.muted = false;
     audio.play();
     updateToggleButton(true);
-    console.log("Audio unmuted manually.");
   } else if (audio.paused) {
-    // If paused, resume playback from middle or current position
     if (audio.currentTime === 0) {
       setToMiddle();
     }
     audio.muted = false;
     audio.play();
     updateToggleButton(true);
-    console.log("Audio playing.");
   } else {
-    // If playing, pause playback
     audio.pause();
     updateToggleButton(false);
-    console.log("Audio paused.");
   }
 });

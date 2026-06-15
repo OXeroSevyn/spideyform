@@ -631,3 +631,113 @@ body {
   color: var(--text-secondary);
   opacity: 0.7;
 }
+
+/* --- Splash Screen Overlay --- */
+.splash-screen-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, rgba(246, 250, 246, 0.95) 0%, rgba(220, 235, 220, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.6s;
+}
+
+.splash-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.splash-logo {
+  max-height: 150px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 15px 35px rgba(35, 171, 8, 0.3));
+  animation: floatSplashLogo 4s infinite alternate ease-in-out;
+}
+
+@keyframes floatSplashLogo {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-12px); }
+}
+
+.splash-subtitle {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.splash-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  letter-spacing: -2px;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.splash-highlight {
+  background: linear-gradient(135deg, #1fa304, #00b0ff, #e10050);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.splash-tagline {
+  font-size: 0.88rem;
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.btn-enter-portal {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 1.1rem 2.5rem;
+  background: linear-gradient(135deg, #23ab08 0%, #17c244 100%);
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(35, 171, 8, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  letter-spacing: 1.5px;
+  transition: var(--transition-cubic);
+}
+
+.btn-enter-portal:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(35, 171, 8, 0.45);
+}
+
+.btn-enter-portal:active {
+  transform: translateY(-1px);
+}
+
+/* Faded states for JS */
+.splash-screen-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
