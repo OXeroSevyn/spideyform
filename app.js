@@ -3,19 +3,26 @@ const audio = document.getElementById('bgMusic');
 const soundToggle = document.getElementById('soundToggle');
 let isMusicInitialized = false;
 
+// Function to set playtime to middle (fallback to 79s if duration is NaN)
+function setToMiddle() {
+  if (audio.duration && !isNaN(audio.duration)) {
+    audio.currentTime = audio.duration / 2;
+  } else {
+    audio.currentTime = 79; // Safe default middle point for Sunflower
+  }
+}
+
 // Seek to the middle of the track when metadata loads
 audio.addEventListener('loadedmetadata', () => {
-  audio.currentTime = audio.duration / 2;
+  setToMiddle();
 });
-
-// Fallback if metadata is preloaded or cached
-if (audio.readyState >= 1) {
-  audio.currentTime = audio.duration / 2 || 79;
-}
 
 // Play audio on first user interaction (browser restriction bypass)
 function startAutoplay() {
   if (isMusicInitialized) return;
+  
+  // Set to middle before playing
+  setToMiddle();
   
   // Try to play
   audio.play()
@@ -27,7 +34,7 @@ function startAutoplay() {
       document.removeEventListener('touchstart', startAutoplay);
     })
     .catch((err) => {
-      console.warn("Autoplay blocked by browser policy. Waiting for user interaction.");
+      console.warn("Autoplay blocked by browser policy. waiting for click.", err);
     });
 }
 
@@ -39,13 +46,13 @@ document.addEventListener('touchstart', startAutoplay);
 soundToggle.addEventListener('click', (e) => {
   e.stopPropagation(); // Avoid triggering startAutoplay again
   if (audio.paused) {
-    // If not initialized, set position to middle
-    if (!isMusicInitialized) {
-      audio.currentTime = audio.duration / 2 || 79;
-      isMusicInitialized = true;
-    }
-    audio.play();
-    updateToggleButton(true);
+    setToMiddle();
+    audio.play()
+      .then(() => {
+        isMusicInitialized = true;
+        updateToggleButton(true);
+      })
+      .catch((err) => console.error("Error playing audio manually:", err));
   } else {
     audio.pause();
     updateToggleButton(false);
