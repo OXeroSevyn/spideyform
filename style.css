@@ -439,16 +439,6 @@ body {
   animation: floatCharacter 5s infinite alternate ease-in-out;
 }
 
-.graphic-popcorn {
-  height: 75px;
-  position: absolute;
-  z-index: 3;
-  bottom: -15px;
-  left: -5px;
-  transform: rotate(-12deg);
-  filter: drop-shadow(0 8px 15px rgba(0,0,0,0.12));
-}
-
 .graphic-ticket {
   height: 60px;
   position: absolute;
